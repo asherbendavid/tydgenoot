@@ -3,9 +3,10 @@ package cvc.dashingdog.tydgenoot.ui.clock
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import cvc.dashingdog.tydgenoot.model.BurnInOffsetCalculator
+import cvc.dashingdog.tydgenoot.model.DateFormatter
 import cvc.dashingdog.tydgenoot.model.Offset
-import cvc.dashingdog.tydgenoot.model.SegmentState
 import cvc.dashingdog.tydgenoot.model.SegmentMapper
+import cvc.dashingdog.tydgenoot.model.SegmentState
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -24,6 +25,8 @@ data class ClockUiState(
     val minuteUnits: SegmentState = SegmentState.DIGIT_0,
     val colonVisible: Boolean = true,
     val showLeadingZero: Boolean = true,
+    val formattedDate: String = "01 01 2026",
+    val dayOfWeekIndex: Int = 0,
     val burnInOffset: Offset = Offset(0f, 0f)
 )
 
@@ -40,8 +43,6 @@ class ClockViewModel(
     }
 
     private fun startClockTicker() {
-        // Use viewModelScope (which uses Main dispatcher by default).
-        // In JVM unit tests, injecting a test dispatcher or guard prevents Looper missing errors.
         viewModelScope.launch(dispatcher) {
             while (isActive) {
                 updateTimeAndOffset()
@@ -59,6 +60,7 @@ class ClockViewModel(
         val currentShowZero = _uiState.value.showLeadingZero
         val (hTens, hUnits) = SegmentMapper.mapHour(hour, currentShowZero)
         val (mTens, mUnits) = SegmentMapper.mapMinute(minute)
+        val dateInfo = DateFormatter.formatFromCalendar(calendar)
         val offset = BurnInOffsetCalculator.calculateOffset(currentTimeMs)
 
         val colonBlink = (second % 2 == 0)
@@ -70,6 +72,8 @@ class ClockViewModel(
                 minuteTens = mTens,
                 minuteUnits = mUnits,
                 colonVisible = colonBlink,
+                formattedDate = dateInfo.formattedDate,
+                dayOfWeekIndex = dateInfo.dayOfWeekIndex,
                 burnInOffset = offset
             )
         }
