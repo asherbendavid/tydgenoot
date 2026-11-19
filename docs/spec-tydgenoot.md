@@ -83,4 +83,4 @@ Must never: show a copy of the credits or license that differs from the repo fil
 - None. All feasibility questions were settled; technical verifications are queued for Phase 0.
 
 ## Amendments log
-- (empty at the start)
+- 2026-11-18: Added leading-hour zero toggle (`08:30` vs ` 8:30`) to user-configurable settings. Why it is in scope: Accommodates user preference for leading zero display. Raised in: Phase 1.
