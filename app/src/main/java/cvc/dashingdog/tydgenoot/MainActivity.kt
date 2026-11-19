@@ -2,6 +2,7 @@ package cvc.dashingdog.tydgenoot
 
 import android.content.Context
 import android.content.pm.PackageManager
+import android.content.res.Configuration
 import android.os.Build
 import android.os.Bundle
 import android.view.View
@@ -21,12 +22,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import cvc.dashingdog.tydgenoot.ui.clock.ClockViewModel
 import cvc.dashingdog.tydgenoot.ui.clock.LandscapeClockLayout
+import cvc.dashingdog.tydgenoot.ui.clock.PortraitClockLayout
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -87,18 +90,28 @@ private fun ClockScreenRoot(
     viewModel: ClockViewModel = viewModel()
 ) {
     val context = LocalContext.current
+    val configuration = LocalConfiguration.current
     val versionName = remember(context) { resolveInstalledVersionName(context) }
     val uiState by viewModel.uiState.collectAsState()
+
+    val isPortrait = configuration.orientation == Configuration.ORIENTATION_PORTRAIT
 
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFF000000)) // Pure black background
     ) {
-        LandscapeClockLayout(
-            uiState = uiState,
-            modifier = Modifier.fillMaxSize()
-        )
+        if (isPortrait) {
+            PortraitClockLayout(
+                uiState = uiState,
+                modifier = Modifier.fillMaxSize()
+            )
+        } else {
+            LandscapeClockLayout(
+                uiState = uiState,
+                modifier = Modifier.fillMaxSize()
+            )
+        }
 
         // Minimal About stub in bottom corner (T-015)
         Box(
