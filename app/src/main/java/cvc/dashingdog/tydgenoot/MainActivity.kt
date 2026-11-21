@@ -25,7 +25,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
@@ -34,6 +33,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
+import cvc.dashingdog.tydgenoot.about.AboutScreen
 import cvc.dashingdog.tydgenoot.data.DataStoreThemePreferencesRepository
 import cvc.dashingdog.tydgenoot.data.themePreferencesDataStore
 import cvc.dashingdog.tydgenoot.ui.clock.ClockViewModel
@@ -118,6 +118,7 @@ private fun ClockScreenRoot() {
     val uiState by viewModel.uiState.collectAsState()
 
     var isSettingsOpen by rememberSaveable { mutableStateOf(false) }
+    var isAboutOpen by rememberSaveable { mutableStateOf(false) }
 
     val themePrefs = remember(uiState.activeColorArgb, uiState.backgroundPreset, uiState.showLeadingZero) {
         uiState.currentThemePreferences()
@@ -156,7 +157,7 @@ private fun ClockScreenRoot() {
             )
         }
 
-        // Clock version label retained per developer preference
+        // Clock version label retained permanently per developer preference
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -173,10 +174,21 @@ private fun ClockScreenRoot() {
         if (isSettingsOpen) {
             SettingsOverlay(
                 uiState = uiState,
-                onDismiss = { isSettingsOpen = false },
+                onDismiss = {
+                    isAboutOpen = false
+                    isSettingsOpen = false
+                },
                 onSetActiveColorArgb = viewModel::setActiveColorArgb,
                 onSetBackgroundPreset = viewModel::setBackgroundPreset,
-                onSetShowLeadingZero = viewModel::setShowLeadingZero
+                onSetShowLeadingZero = viewModel::setShowLeadingZero,
+                onOpenAbout = { isAboutOpen = true }
+            )
+        }
+
+        if (isAboutOpen) {
+            AboutScreen(
+                accentColor = activeColor,
+                onDismiss = { isAboutOpen = false }
             )
         }
     }
