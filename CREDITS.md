@@ -15,8 +15,8 @@ None.
 
 Built-in libraries & tools:
 ---------------------------
-- Jetpack Compose, AndroidX ViewModel, and Jetpack DataStore (Preferences)
-- Multiplatform Markdown Renderer (`com.mikepenz:multiplatform-markdown-renderer-m3`) for About screen asset rendering
+- Jetpack Compose, Material 3, AndroidX ViewModel, and Jetpack DataStore (Preferences)
+- Multiplatform Markdown Renderer (`com.mikepenz:multiplatform-markdown-renderer-m3`) for rendering `ABOUT.md`, `CREDITS.md`, and `LICENSE` on the About screen
 - Agentic engineering assistance from Claude (Anthropic) and Gemini (Google)
 
 Media credits:
