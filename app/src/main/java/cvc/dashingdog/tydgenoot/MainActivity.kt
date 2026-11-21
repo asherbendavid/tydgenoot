@@ -10,6 +10,7 @@ import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -18,18 +19,27 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
+import cvc.dashingdog.tydgenoot.data.DataStoreThemePreferencesRepository
+import cvc.dashingdog.tydgenoot.data.themePreferencesDataStore
 import cvc.dashingdog.tydgenoot.ui.clock.ClockViewModel
 import cvc.dashingdog.tydgenoot.ui.clock.LandscapeClockLayout
 import cvc.dashingdog.tydgenoot.ui.clock.PortraitClockLayout
+import cvc.dashingdog.tydgenoot.ui.settings.SettingsOverlay
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -85,35 +95,68 @@ private fun resolveInstalledVersionName(context: Context): String {
     }
 }
 
+private class ClockViewModelFactory(
+    private val context: Context
+) : ViewModelProvider.Factory {
+    @Suppress("UNCHECKED_CAST")
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(ClockViewModel::class.java)) {
+            val repository = DataStoreThemePreferencesRepository(context.applicationContext.themePreferencesDataStore)
+            return ClockViewModel(preferencesRepository = repository) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
+    }
+}
+
 @Composable
-private fun ClockScreenRoot(
-    viewModel: ClockViewModel = viewModel()
-) {
+private fun ClockScreenRoot() {
     val context = LocalContext.current
     val configuration = LocalConfiguration.current
     val versionName = remember(context) { resolveInstalledVersionName(context) }
+    val factory = remember(context) { ClockViewModelFactory(context) }
+    val viewModel: ClockViewModel = viewModel(factory = factory)
     val uiState by viewModel.uiState.collectAsState()
+
+    var isSettingsOpen by rememberSaveable { mutableStateOf(false) }
+
+    val themePrefs = remember(uiState.activeColorArgb, uiState.backgroundPreset, uiState.showLeadingZero) {
+        uiState.currentThemePreferences()
+    }
+    val activeColor = remember(themePrefs) { themePrefs.activeComposeColor() }
+    val ghostColor = remember(themePrefs) { themePrefs.ghostComposeColor() }
+    val backgroundColor = remember(uiState.backgroundPreset) { uiState.backgroundPreset.toComposeColor() }
 
     val isPortrait = configuration.orientation == Configuration.ORIENTATION_PORTRAIT
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF000000)) // Pure black background
+            .background(backgroundColor)
+            .pointerInput(Unit) {
+                detectTapGestures(
+                    onDoubleTap = {
+                        isSettingsOpen = true
+                    }
+                )
+            }
     ) {
         if (isPortrait) {
             PortraitClockLayout(
                 uiState = uiState,
+                activeColor = activeColor,
+                ghostColor = ghostColor,
                 modifier = Modifier.fillMaxSize()
             )
         } else {
             LandscapeClockLayout(
                 uiState = uiState,
+                activeColor = activeColor,
+                ghostColor = ghostColor,
                 modifier = Modifier.fillMaxSize()
             )
         }
 
-        // Minimal About stub in bottom corner (T-015)
+        // Clock version label retained per developer preference
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -122,8 +165,18 @@ private fun ClockScreenRoot(
         ) {
             Text(
                 text = "Tydgenoot v$versionName",
-                color = Color(0xFF224448),
+                color = ghostColor,
                 fontSize = 12.sp
+            )
+        }
+
+        if (isSettingsOpen) {
+            SettingsOverlay(
+                uiState = uiState,
+                onDismiss = { isSettingsOpen = false },
+                onSetActiveColorArgb = viewModel::setActiveColorArgb,
+                onSetBackgroundPreset = viewModel::setBackgroundPreset,
+                onSetShowLeadingZero = viewModel::setShowLeadingZero
             )
         }
     }
